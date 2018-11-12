@@ -32,7 +32,7 @@ DEFAULT_CONFIG = {
     "skip_to_bnet": True,
     "direct": False,
     "no_sound": False,
-    "check_for_updates": True,
+    "check_for_updates": False,
     "loot_filter_url": "http://pathofdiablo.com/item.filter",
     "update_url": "https://raw.githubusercontent.com/GreenDude120/PoD-Launcher/master/files.xml",
 }
@@ -193,7 +193,7 @@ class Launcher:
                     args.append(key)
             logger.info("launching arguments %r", args)
             try:
-                Popen(args, stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
+                Popen(args, stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL, cwd=str(self.pod_path))
             except Exception:
                 logger.exception("launch went wrong")
 
