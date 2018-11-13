@@ -9,9 +9,12 @@ import pathlib
 import contextlib
 import tempfile
 import asyncio
+import datetime
 from subprocess import Popen, DEVNULL
 
 import aiohttp
+import jinja2
+import yaml
 from sqlitedict import SqliteDict
 from skin import Skin
 from lxml import etree
@@ -48,6 +51,7 @@ LAUNCH_KEYS = {
 
 CHUNK_SIZE = 8192
 SOCKET_TIMEOUT = 300
+IGNORE_ON_UPDATE = {"item.filter"}
 
 
 class UiLogger(logging.StreamHandler):
@@ -95,6 +99,28 @@ class Progress:
 
     def __exit__(self, *exc_info):
         self.progress.setValue(100)
+
+
+def log_exception(f_or_coro):
+
+    @functools.wraps(f_or_coro)
+    async def async_wrapper(*args, **kwargs):
+        try:
+            return await f_or_coro(*args, **kwargs)
+        except Exception:
+            logger.exception("critical on %r", f_or_coro)
+
+    @functools.wraps(f_or_coro)
+    def sync_wrapper(*args, **kwargs):
+        try:
+            return f_or_coro(*args, **kwargs)
+        except Exception:
+            logger.exception("critical on %r", f_or_coro)
+
+    if asyncio.iscoroutinefunction(f_or_coro):
+        return async_wrapper
+    else:
+        return sync_wrapper
 
 
 class Launcher:
@@ -146,6 +172,13 @@ class Launcher:
         self.config[key] = pathlib.Path(s).resolve()
         view.setText(s)
 
+    def _choose_file(self, key, view):
+        s, _ = QtWidgets.QFileDialog.getOpenFileName(self.ui, dir=view.text())
+        if not s:
+            return
+        self.config[key] = pathlib.Path(s).resolve()
+        view.setText(s)
+
     def _checkbox_changed(self, key, edit, *_):
         self.config[key] = edit.isChecked()
 
@@ -165,15 +198,19 @@ class Launcher:
             else:
                 logger.error("no widgets for %r key in config", key)
         self.ui.launch_button.clicked.connect(self.launch)
-        self.ui.download_button.clicked.connect(self.download_loot_filter)
+        self.ui.generate_loot_filter_button.clicked.connect(self.generate_loot_filter)
         self.ui.update_button.clicked.connect(self.update)
+        f = functools.partial(self._choose_file, "loot_filter_url", self.ui.loot_filter_url_edit)
+        self.ui.browse_loot_filter_button.clicked.connect(f)
 
     @property
     def pod_path(self):
         return self.config["d2_path"] / "Path of Diablo"
 
     def _set_buttons_state(self, state):
-        for b in (self.ui.launch_button, self.ui.download_button, self.ui.update_button):
+        buttons = (self.ui.launch_button, self.ui.generate_loot_filter_button,
+                   self.ui.update_button, self.ui.browse_loot_filter_button)
+        for b in buttons:
             b.setEnabled(state)
 
     @contextlib.contextmanager
@@ -184,6 +221,7 @@ class Launcher:
         finally:
             self._set_buttons_state(True)
 
+    @log_exception
     def launch(self):
         with self.disabled_buttons():
             logger.info("launching pod...")
@@ -225,7 +263,7 @@ class Launcher:
         for desc in descriptions:
             if desc.crc and desc.target.exists():
                 need_check.append(desc)
-            else:
+            elif desc.target.name not in IGNORE_ON_UPDATE:
                 need_update.append(desc)
         if need_check:
             # crc32 local files
@@ -265,20 +303,31 @@ class Launcher:
                     self.progress.add(1)
 
     @asyncSlot()
-    async def download_loot_filter(self):
+    @log_exception
+    async def generate_loot_filter(self):
         with self.disabled_buttons():
-            target = self.pod_path / "filter" / "item.filter"
+            target = self.pod_path / "item.filter"
             if target.exists():
                 answer = QtWidgets.QMessageBox.question(self.ui, "Confirmation",
                                                         "Are you sure you want to rewrite your 'item.filter'?")
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
-            logger.info("downloading loot filter...")
-            await self._download_file([self.config["loot_filter_url"]], target)
-            logger.info("download done")
+            logger.info("generating loot filter...")
+            uri = self.config["loot_filter_url"]
+            try:
+                template = pathlib.Path(uri).read_text()
+            except Exception:
+                async with self.session.get(uri) as response:
+                    template = await response.text()
+            code = Skin(yaml.load(pkg_resources.resource_string("pypod_launcher", "codes.yaml")))
+            rendered = jinja2.Template(template, line_statement_prefix="#").render(code=code)
+            header = "// Generated {} with pypod-launcher v{}\n".format(datetime.datetime.now(), version)
+            target.write_text(header + rendered)
+            logger.info("generation done")
             self.ui.status.setText("done")
 
     @asyncSlot()
+    @log_exception
     async def update(self):
         with self.disabled_buttons():
             logger.info("checking for update...")
