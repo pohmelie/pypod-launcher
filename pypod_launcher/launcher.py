@@ -344,6 +344,7 @@ class Launcher:
                     crc=crc,
                 )))
             await self._update_files(descriptions)
+            (self.pod_path / "config").mkdir(parents=True, exist_ok=True)
             logger.debug("update done")
             self.ui.status.setText("done")
 
