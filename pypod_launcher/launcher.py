@@ -351,7 +351,7 @@ class Launcher:
 
 def config_logging(ui):
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.INFO)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                                   datefmt="[%Y-%m-%d %H:%M:%S]")
     file_handler = logging.handlers.RotatingFileHandler("pypod-launcher.log", maxBytes=2 ** 20,
@@ -363,6 +363,7 @@ def config_logging(ui):
     ui_handler.setFormatter(formatter)
     ui_handler.setLevel(logging.DEBUG)
     logger.addHandler(ui_handler)
+    logger.setLevel(logging.DEBUG)
     logger.info("pypod-launcher version: %s", version)
 
 
