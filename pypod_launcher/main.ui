@@ -17,7 +17,7 @@
    <item>
     <widget class="QGroupBox" name="groupBox_5">
      <property name="title">
-      <string> D2 LoD 1.13c/1.13d path</string>
+      <string> D2 LoD path</string>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,0">
       <item>
