@@ -129,4 +129,4 @@ ItemDisplay[INF !RW !leg]:
 
 This will produce about 230 lines of «classic» item filter. Read more on [jinja2 documentation](http://jinja.pocoo.org/docs/2.10/templates/).
 
-`d2` object is straight view/proxy of [this](https://github.com/pohmelie/pypod-launcher/blob/master/pypod_launcher/codes.yaml) yaml file (feel free to make pull requests to add items).
+`d2` object is straight view/proxy of [this](https://github.com/pohmelie/pypod-launcher/blob/master/pypod_launcher/d2.yaml) yaml file (feel free to make pull requests to add items).
