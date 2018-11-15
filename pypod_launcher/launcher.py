@@ -319,9 +319,9 @@ class Launcher:
             except Exception:
                 async with self.session.get(uri) as response:
                     template = await response.text()
-            code = Skin(yaml.load(pkg_resources.resource_string("pypod_launcher", "codes.yaml")))
-            rendered = jinja2.Template(template, line_statement_prefix="#").render(code=code)
-            header = "// Generated {} with pypod-launcher v{}\n".format(datetime.datetime.now(), version)
+            d2 = Skin(yaml.load(pkg_resources.resource_string("pypod_launcher", "d2.yaml")))
+            rendered = jinja2.Template(template, line_statement_prefix="#", line_comment_prefix="##").render(d2=d2)
+            header = "// Generated with pypod-launcher v{} ({})\n".format(version, datetime.datetime.now())
             target.write_text(header + rendered)
             logger.info("generation done")
             self.ui.status.setText("done")

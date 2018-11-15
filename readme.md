@@ -27,32 +27,106 @@ py -m pip install git+https://github.com/pohmelie/pypod-launcher
 ## Usage
 
 ### Loot filter generator
-You can use download link for «classic» item filters as it is on official pod launcher. But there is a new feature: jinja2-based generator, which you can use to generate item filter rules:
+You can use download link for «classic» item filters as it is on official pod launcher. But there is a new feature: jinja2-based generator, which you can use to generate item filter rules with loops, conditions and configuration parameters:
 ```
+## configuration part
+# set gold_hide_step = 15
+# set hp_mp_hide = namespace(
+    enabled=true,
+    clvls=[12, 18, 30, 40, 0],
+    colors={"hp": d2.color.red, "mp": d2.color.blue},
+)
+# set small_rej_hide_clvl = 40
+# set hide_potions = ["stamina", "antidote", "thawing", "rancid_gas", "oil",
+                      "choking_gas", "exploding", "strangling_gas", "fulminating"]
+# set hide_tp_id_scrolls = true
+# set hide_tp_id_books = true
+# set hide_key = true
+# set hide_gems = namespace(
+    enabled=true,
+    clvls={
+        "chipped": 15,
+        "flawed": 20,
+        "normal": 40,
+    },
+)
+
+
+## implementation part
 // hide low gold
-# for clvl in range(1, 91):
-ItemDisplay[{{ code.gold }}<{{ clvl * 1000 // 90 }} AND CLVL>{{ clvl }}]:
-# endfor
-ItemDisplay[{{ code.gold }}]: %NAME%
+# if gold_hide_step:
+    # for clvl in range(1, 100):
+        ItemDisplay[{{ d2.code.gold }}<{{ (clvl * gold_hide_step)|round|int }} AND CLVL>{{ clvl }}]:
+    # endfor
+# endif
 
 // runes
-# for i in range(1, 34):
-ItemDisplay[r{{ i }}]: %ORANGE%%NAME%
+# for code in d2.code.rune.by_tier:
+    ItemDisplay[{{ code }}]: {{ d2.color.orange }}{{ d2.tag.runename }} Rune [{{ loop.index }}]
 # endfor
+
+// hp/mp potions
+# if hp_mp_hide
+    # for type, color in hp_mp_hide.colors.items():
+        # for code in d2.code.potion[type]:
+            # set clvl = hp_mp_hide.clvls[loop.index0]
+            # if clvl:
+                ItemDisplay[{{ code }} CLVL<{{ clvl }}]: {{ color }}!{{ d2.color.white }}{{ type }}
+                ItemDisplay[{{ code }} CLVL>{{ clvl - 1 }}]:
+            # else
+                ItemDisplay[{{ code }}]: {{ color }}!{{ d2.color.white }}{{ type }}
+            # endif
+        # endfor
+    # endfor
+# endif
 
 // rejs
-ItemDisplay[{{ code.potion.rejuvenation.small }} CLVL<40]: %PURPLE%!%WHITE%35%
-ItemDisplay[{{ code.potion.rejuvenation.small }} CLVL>39]:
-ItemDisplay[{{ code.potion.rejuvenation.big }}]: %PURPLE%!%WHITE%70%
+# if small_rej_hide_clvl:
+    ItemDisplay[{{ d2.code.potion.rejuvenation.small }} CLVL<{{ small_rej_hide_clvl }}]: {{ d2.color.purple }}!{{ d2.color.white }}35%
+    ItemDisplay[{{ d2.code.potion.rejuvenation.small }} CLVL>{{ small_rej_hide_clvl - 1 }}]:
+# endif
+ItemDisplay[{{ d2.code.potion.rejuvenation.big }}]: {{ d2.color.purple }}!{{ d2.color.white }}70%
+
+// hide potions
+# if hide_potions
+    # for name in hide_potions:
+        ItemDisplay[{{ d2.code.potion[name] }}]:
+    # endfor
+# endif
+
+// hide scrolls
+# if hide_tp_id_scrolls
+    ItemDisplay[{{ d2.code.scroll.town_portal }}]:
+    ItemDisplay[{{ d2.code.scroll.identify }}]:
+# endif
+
+// hide books
+# if hide_tp_id_books
+    ItemDisplay[{{ d2.code.book.town_portal }}]:
+    ItemDisplay[{{ d2.code.book.identify }}]:
+# endif
+
+// hide key
+# if hide_key
+    ItemDisplay[{{ d2.code.key }}]:
+# endif
 
 // gems
-# for name in code.gem:
-# for code in code.gem[name].by_tier:
-ItemDisplay[{{ code }}]: %ORANGE%!%WHITE%%NAME%
+# for name in d2.code.gem:
+    # for tier, code in d2.code.gem[name].by_name.items():
+        # set clvl = hide_gems.clvls.get(tier)
+        # if hide_gems.enabled and clvl:
+            ItemDisplay[{{ code }} CLVL<{{ clvl }}]: {{ d2.color.orange }}!{{ d2.color.white }}{{ tier|capitalize }} {{ name|capitalize }}
+            ItemDisplay[{{ code }} CLVL>{{ clvl - 1 }}]:
+        # else
+            ItemDisplay[{{ code }}]: {{ d2.color.orange }}!{{ d2.color.white }}{{ tier|capitalize }} {{ name|capitalize }}
+        # endif
+    # endfor
 # endfor
-# endfor
+
+ItemDisplay[INF !RW !leg]:
 ```
 
-This will produce about 170 lines of «classic» item filter. Read more on [jinja2 documentation](http://jinja.pocoo.org/docs/2.10/templates/).
+This will produce about 230 lines of «classic» item filter. Read more on [jinja2 documentation](http://jinja.pocoo.org/docs/2.10/templates/).
 
-`code` object is straight view/proxy of [this](https://github.com/pohmelie/pypod-launcher/blob/master/pypod_launcher/codes.yaml) yaml file (feel free to make pull requests to add items).
+`d2` object is straight view/proxy of [this](https://github.com/pohmelie/pypod-launcher/blob/master/pypod_launcher/codes.yaml) yaml file (feel free to make pull requests to add items).

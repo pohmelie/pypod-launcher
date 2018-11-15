@@ -1,0 +1,151 @@
+tag:
+    price: "%PRICE%"
+    ilvl: "%ILVL%"
+    sockets: "%SOCKETS%"
+    code: "%CODE%"
+    name: "%NAME%"
+    clvl: "%CLVL%"
+    runename: "%RUNENAME%"
+color:
+    green: "%GREEN%"
+    dark_green: "%DGREEN%"
+    gold: "%GOLD%"
+    tan: "%TAN%"
+    blue: "%BLUE%"
+    gray: "%GRAY%"
+    white: "%WHITE%"
+    black: "%BLACK%"
+    yellow: "%YELLOW%"
+    orange: "%ORANGE%"
+    purple: "%PURPLE%"
+    red: "%RED%"
+code:
+    key: key
+    potion:
+        hp: [hp1, hp2, hp3, hp4, hp5]
+        mp: [mp1, mp2, mp3, mp4, mp5]
+        rejuvenation:
+            small: rvs
+            big: rvl
+        stamina: vps
+        antidote: yps
+        thawing: wms
+        rancid_gas: gps
+        oil: ops
+        choking_gas: gpm
+        exploding: opm
+        strangling_gas: gpl
+        fulminating: opl
+    book:
+        town_portal: tbk
+        identify: ibk
+    amulet: amu
+    ring: rin
+    gold: GOLD
+    scroll:
+        town_portal: tsc
+        identify: isc
+    horadric_cube: box
+    gem:
+        amethyst:
+            by_name:
+                chipped: gcv
+                flawed: gfv
+                normal: gsv
+                flawless: gzv
+                perfect: gpv
+            by_tier: [gcv, gfv, gsv, gzv, gpv]
+        topaz:
+            by_name:
+                chipped: gcy
+                flawed: gfy
+                normal: gsy
+                flawless: gly
+                perfect: gpy
+            by_tier: [gcy, gfy, gsy, gly, gpy]
+        sapphire:
+            by_name:
+                chipped: gcb
+                flawed: gfb
+                normal: gsb
+                flawless: glb
+                perfect: gpb
+            by_tier: [gcb, gfb, gsb, glb, gpb]
+        emerald:
+            by_name:
+                chipped: gcg
+                flawed: gfg
+                normal: gsg
+                flawless: glg
+                perfect: gpg
+            by_tier: [gcg, gfg, gsg, glg, gpg]
+        ruby:
+            by_name:
+                chipped: gcr
+                flawed: gfr
+                normal: gsr
+                flawless: glr
+                perfect: gpr
+            by_tier: [gcr, gfr, gsr, glr, gpr]
+        diamond:
+            by_name:
+                chipped: gcw
+                flawed: gfw
+                normal: gsw
+                flawless: glw
+                perfect: gpw
+            by_tier: [gcw, gfw, gsw, glw, gpw]
+        skull:
+            by_name:
+                chipped: skc
+                flawed: skf
+                normal: sku
+                flawless: skl
+                perfect: skz
+            by_tier: [skc, skf, sku, skl, skz]
+    charm:
+        small: cm1
+        large: cm2
+        grand: cm3
+        torch: tch
+    rune:
+        by_name:
+            el: r01
+            eld: r02
+            tir: r03
+            nef: r04
+            eth: r05
+            ith: r06
+            tal: r07
+            ral: r08
+            ort: r09
+            thul: r10
+            amn: r11
+            sol: r12
+            shael: r13
+            dol: r14
+            hel: r15
+            io: r16
+            lum: r17
+            ko: r18
+            fal: r19
+            lem: r20
+            pul: r21
+            um: r22
+            mal: r23
+            ist: r24
+            gul: r25
+            vex: r26
+            ohm: r27
+            lo: r28
+            sur: r29
+            ber: r30
+            jah: r31
+            cham: r32
+            zod: r33
+        by_tier: [r01, r02, r03, r04, r05, r06, r07, r08, r09, r10, r11, r12, r13,
+                    r14, r15, r16, r17, r18, r19, r20, r21, r22, r23, r24, r25, r26,
+                    r27, r28, r29, r30, r31, r32, r33]
+    jewel: jew
+    arrows: aq2
+    bolts: cq2
