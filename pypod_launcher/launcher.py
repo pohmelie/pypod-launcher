@@ -252,7 +252,7 @@ class Launcher:
                         continue
                     logger.debug("download successful for %r", url)
                     return True
-                except Exception as e:
+                except Exception:
                     logger.exception("something went wrong with url %s", url)
         logger.error("download failed for %r", urls)
         return False
@@ -317,7 +317,7 @@ class Launcher:
             try:
                 template = pathlib.Path(uri).read_text()
             except Exception:
-                async with self.session.get(uri) as response:
+                async with self.session.get(uri.strip()) as response:
                     template = await response.text()
             d2 = Skin(yaml.load(pkg_resources.resource_string("pypod_launcher", "d2.yaml")))
             rendered = jinja2.Template(template, line_statement_prefix="#", line_comment_prefix="##").render(d2=d2)
@@ -331,7 +331,8 @@ class Launcher:
     async def update(self):
         with self.disabled_buttons():
             logger.info("checking for update...")
-            async with self.session.get(self.config["update_url"]) as response:
+            url = self.config["update_url"].strip()
+            async with self.session.get(url) as response:
                 parsed = etree.fromstring(await response.read())
             descriptions = []
             for file_desc in parsed:
