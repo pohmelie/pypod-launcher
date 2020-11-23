@@ -1,28 +1,25 @@
 import collections
-import zlib
-import pkg_resources
-import sys
+import contextlib
+import datetime
+import functools
 import logging
 import logging.handlers
-import functools
 import pathlib
-import contextlib
+import sys
 import tempfile
-import asyncio
-import datetime
-from subprocess import Popen, DEVNULL
+import zlib
+from subprocess import DEVNULL, Popen
 
-import aiohttp
 import jinja2
+import pkg_resources
+import requests
 import yaml
-from sqlitedict import SqliteDict
-from skin import Skin
 from lxml import etree
-from PySide2 import QtWidgets, QtUiTools, QtGui
-from asyncqt import QEventLoop, asyncSlot, asyncClose
+from PySide2 import QtGui, QtUiTools, QtWidgets
+from skin import Skin
+from sqlitedict import SqliteDict
 
 from . import __version__ as version
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +32,7 @@ DEFAULT_CONFIG = {
     "skip_to_bnet": True,
     "direct": False,
     "no_sound": False,
+    "widescreen": False,
     "check_for_updates": False,
     "loot_filter_url": "http://pathofdiablo.com/item.filter",
     "update_url": "https://raw.githubusercontent.com/GreenDude120/PoD-Launcher/master/files.xml",
@@ -47,6 +45,7 @@ LAUNCH_KEYS = {
     "skip_to_bnet": "-skiptobnet",
     "direct": "-direct",
     "no_sound": "-ns",
+    "widescreen": "-widescreen",
 }
 
 CHUNK_SIZE = 8192
@@ -101,26 +100,16 @@ class Progress:
         self.progress.setValue(100)
 
 
-def log_exception(f_or_coro):
+def log_exception(f):
 
-    @functools.wraps(f_or_coro)
-    async def async_wrapper(*args, **kwargs):
-        try:
-            return await f_or_coro(*args, **kwargs)
-        except Exception:
-            logger.exception("critical on %r", f_or_coro)
-
-    @functools.wraps(f_or_coro)
+    @functools.wraps(f)
     def sync_wrapper(*args, **kwargs):
         try:
-            return f_or_coro(*args, **kwargs)
+            return f(*args, **kwargs)
         except Exception:
-            logger.exception("critical on %r", f_or_coro)
+            logger.exception("critical on %r", f)
 
-    if asyncio.iscoroutinefunction(f_or_coro):
-        return async_wrapper
-    else:
-        return sync_wrapper
+    return sync_wrapper
 
 
 class Launcher:
@@ -128,18 +117,12 @@ class Launcher:
     def __init__(self, ui):
         self.ui = ui
         self.progress = Progress(self.ui.progress, self.ui.status)
-        timeout = aiohttp.ClientTimeout(sock_read=SOCKET_TIMEOUT)
-        self.session = aiohttp.ClientSession(timeout=timeout, raise_for_status=True)
         file_config = SqliteDict("pypod-launcher-settings.sqlite", autocommit=True)
         self.config = collections.ChainMap(file_config, DEFAULT_CONFIG)
         self.load()
         self.bind()
         if self.config["check_for_updates"]:
             self.ui.update_button.clicked.emit()
-
-    @asyncClose
-    async def closeEvent(self, event):
-        await self.session.close()
 
     def center(self):
         desktop = QtWidgets.QApplication.desktop()
@@ -235,17 +218,18 @@ class Launcher:
             except Exception:
                 logger.exception("launch went wrong")
 
-    async def _download_file(self, urls, target, expected_crc=None):
+    def _download_file(self, urls, target, expected_crc=None):
         logger.debug("downloading %r", urls)
         target.parent.mkdir(parents=True, exist_ok=True)
         for url in urls:
             with target.open(mode="wb") as f:
                 try:
-                    async with self.session.get(url) as response:
-                        crc = 0
-                        async for chunk in response.content.iter_any():
-                            crc = zlib.crc32(chunk, crc)
-                            f.write(chunk)
+                    response = requests.get(url, stream=True)
+                    response.raise_for_status()
+                    crc = 0
+                    for chunk in response.iter_content(2 ** 20):
+                        crc = zlib.crc32(chunk, crc)
+                        f.write(chunk)
                     calculated_crc = "{:x}".format(crc)
                     if expected_crc is not None and expected_crc != calculated_crc:
                         logger.warning("crc32 for url %s is %r, but expect %r", url, calculated_crc, expected_crc)
@@ -257,7 +241,7 @@ class Launcher:
         logger.error("download failed for %r", urls)
         return False
 
-    async def _update_files(self, descriptions):
+    def _update_files(self, descriptions):
         need_update = []
         need_check = []
         for desc in descriptions:
@@ -290,7 +274,7 @@ class Launcher:
             with self.progress("download remote files...", total=len(need_update)):
                 for desc in need_update:
                     tmp_file = tmp_path / desc.target.name
-                    if not await self._download_file(desc.urls, tmp_file, desc.crc):
+                    if not self._download_file(desc.urls, tmp_file, desc.crc):
                         logger.error("update failed on %r", desc)
                         return
                     self.progress.add(1)
@@ -302,9 +286,7 @@ class Launcher:
                     tmp_file.replace(desc.target)
                     self.progress.add(1)
 
-    @asyncSlot()
-    @log_exception
-    async def generate_loot_filter(self):
+    def generate_loot_filter(self):
         with self.disabled_buttons():
             target = self.pod_path / "item.filter"
             if target.exists():
@@ -317,8 +299,9 @@ class Launcher:
             try:
                 template = pathlib.Path(uri).read_text()
             except Exception:
-                async with self.session.get(uri.strip()) as response:
-                    template = await response.text()
+                response = requests.get(uri.strip())
+                response.raise_for_status()
+                template = response.text
             d2 = Skin(yaml.load(pkg_resources.resource_string("pypod_launcher", "d2.yaml")))
             rendered = jinja2.Template(template, line_statement_prefix="#", line_comment_prefix="##").render(d2=d2)
             header = "// Generated with pypod-launcher v{} ({})\n".format(version, datetime.datetime.now())
@@ -326,14 +309,14 @@ class Launcher:
             logger.info("generation done")
             self.ui.status.setText("done")
 
-    @asyncSlot()
     @log_exception
-    async def update(self):
+    def update(self):
         with self.disabled_buttons():
             logger.info("checking for update...")
             url = self.config["update_url"].strip()
-            async with self.session.get(url) as response:
-                parsed = etree.fromstring(await response.read())
+            response = requests.get(url)
+            response.raise_for_status()
+            parsed = etree.fromstring(response.content)
             descriptions = []
             for file_desc in parsed:
                 crc = file_desc.get("crc")
@@ -344,7 +327,7 @@ class Launcher:
                     target=self.pod_path / file_desc.get("name"),
                     crc=crc,
                 )))
-            await self._update_files(descriptions)
+            self._update_files(descriptions)
             (self.pod_path / "config").mkdir(parents=True, exist_ok=True)
             logger.debug("update done")
             self.ui.status.setText("done")
@@ -372,8 +355,6 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     icon_file = pkg_resources.resource_filename("pypod_launcher", "icon.ico")
     app.setWindowIcon(QtGui.QIcon(icon_file))
-    loop = QEventLoop(app)
-    asyncio.set_event_loop(loop)
     ui_file = pkg_resources.resource_filename("pypod_launcher", "main.ui")
     ui = QtUiTools.QUiLoader().load(ui_file)
     ui.setWindowTitle("pypod-launcher [v{}]".format(version))
@@ -381,8 +362,7 @@ def main():
     launcher = Launcher(ui)
     launcher.center()
     ui.show()
-    with loop:
-        sys.exit(loop.run_forever())
+    sys.exit(app.exec_())
 
 
 if __name__ == "__main__":

@@ -52,20 +52,6 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QCheckBox" name="skip_to_bnet_edit">
-          <property name="text">
-           <string>skip to battlenet (-skiptobnet)</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QCheckBox" name="glide_wrapper_only_edit">
-          <property name="text">
-           <string>glide wrapper only (-3dfx)</string>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="1">
          <widget class="QCheckBox" name="direct_edit">
           <property name="text">
@@ -80,10 +66,31 @@
           </property>
          </widget>
         </item>
+        <item row="1" column="0">
+         <widget class="QCheckBox" name="glide_wrapper_only_edit">
+          <property name="text">
+           <string>glide wrapper only (-3dfx)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QCheckBox" name="skip_to_bnet_edit">
+          <property name="text">
+           <string>skip to battlenet (-skiptobnet)</string>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="1">
          <widget class="QCheckBox" name="no_sound_edit">
           <property name="text">
            <string>no sound (-ns)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QCheckBox" name="widescreen_edit">
+          <property name="text">
+           <string>widescreen (-widescreen)</string>
           </property>
          </widget>
         </item>
