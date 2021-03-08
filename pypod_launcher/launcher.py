@@ -288,7 +288,7 @@ class Launcher:
 
     def generate_loot_filter(self):
         with self.disabled_buttons():
-            target = self.pod_path / "item.filter"
+            target = self.pod_path / "filter" / "item.filter"
             if target.exists():
                 answer = QtWidgets.QMessageBox.question(self.ui, "Confirmation",
                                                         "Are you sure you want to rewrite your 'item.filter'?")
@@ -305,6 +305,7 @@ class Launcher:
             d2 = Skin(yaml.load(pkg_resources.resource_string("pypod_launcher", "d2.yaml")))
             rendered = jinja2.Template(template, line_statement_prefix="#", line_comment_prefix="##").render(d2=d2)
             header = "// Generated with pypod-launcher v{} ({})\n".format(version, datetime.datetime.now())
+            target.parent.mkdir(exist_ok=True)
             target.write_text(header + rendered)
             logger.info("generation done")
             self.ui.status.setText("done")
