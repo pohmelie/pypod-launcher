@@ -19,6 +19,19 @@ color:
     orange: "%ORANGE%"
     purple: "%PURPLE%"
     red: "%RED%"
+notify:
+    green: "%NOTIFY-GREEN%"
+    dark_green: "%NOTIFY-DGREEN%"
+    gold: "%NOTIFY-GOLD%"
+    tan: "%NOTIFY-TAN%"
+    blue: "%NOTIFY-BLUE%"
+    gray: "%NOTIFY-GRAY%"
+    white: "%NOTIFY-WHITE%"
+    black: "%NOTIFY-BLACK%"
+    yellow: "%NOTIFY-YELLOW%"
+    orange: "%NOTIFY-ORANGE%"
+    purple: "%NOTIFY-PURPLE%"
+    red: "%NOTIFY-RED%"
 code:
     key: key
     potion:
@@ -149,3 +162,4 @@ code:
     jewel: jew
     arrows: aq2
     bolts: cq2
+    ooc: cx5
