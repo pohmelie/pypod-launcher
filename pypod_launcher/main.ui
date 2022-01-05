@@ -45,52 +45,73 @@
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <widget class="QCheckBox" name="window_mode_edit">
+        <item row="0" column="1">
+         <widget class="QCheckBox" name="skip_to_bnet_edit">
           <property name="text">
-           <string>window mode (-w)</string>
+           <string>-skiptobnet</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
-         <widget class="QCheckBox" name="direct_edit">
+        <item row="0" column="0">
+         <widget class="QRadioButton" name="vmode_gdi_edit">
           <property name="text">
-           <string>direct (-direct)</string>
+           <string>-w (GDI+)</string>
           </property>
          </widget>
         </item>
         <item row="2" column="0">
+         <widget class="QRadioButton" name="vmode_ddraw_edit">
+          <property name="text">
+           <string>-ddraw (DirectDraw)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
          <widget class="QCheckBox" name="no_fix_aspect_edit">
           <property name="text">
-           <string>no fix aspect (-nofixaspect)</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QCheckBox" name="glide_wrapper_only_edit">
-          <property name="text">
-           <string>glide wrapper only (-3dfx)</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QCheckBox" name="skip_to_bnet_edit">
-          <property name="text">
-           <string>skip to battlenet (-skiptobnet)</string>
+           <string>-nofixaspect</string>
           </property>
          </widget>
         </item>
         <item row="2" column="1">
          <widget class="QCheckBox" name="no_sound_edit">
           <property name="text">
-           <string>no sound (-ns)</string>
+           <string>-ns (no sound)</string>
           </property>
          </widget>
         </item>
         <item row="3" column="0">
+         <widget class="QRadioButton" name="vmode_d2vidtest_edit">
+          <property name="text">
+           <string>D2VidTest</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QCheckBox" name="direct_edit">
+          <property name="text">
+           <string>-sndbkg</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QRadioButton" name="vmode_glide_edit">
+          <property name="text">
+           <string>-3dfx (Glide Wrapper)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
          <widget class="QCheckBox" name="widescreen_edit">
           <property name="text">
-           <string>widescreen (-widescreen)</string>
+           <string>-widescreen</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QCheckBox" name="cpufix_edit">
+          <property name="text">
+           <string>-cpufix</string>
           </property>
          </widget>
         </item>
@@ -176,13 +197,6 @@
          </widget>
         </item>
        </layout>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="check_for_updates_edit">
-        <property name="text">
-         <string>check for updates on start</string>
-        </property>
-       </widget>
       </item>
      </layout>
     </widget>

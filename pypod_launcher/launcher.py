@@ -26,31 +26,36 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = {
     "d2_path": pathlib.Path(),
-    "window_mode": True,
-    "glide_wrapper_only": True,
+    "vmode_gdi": False,
+    "vmode_glide": False,
+    "vmode_ddraw": True,
+    "vmode_d2vidtest": False,
     "no_fix_aspect": False,
     "skip_to_bnet": True,
     "direct": False,
     "no_sound": False,
-    "widescreen": False,
-    "check_for_updates": False,
+    "widescreen": True,
+    "cpufix": False,
     "loot_filter_url": "http://pathofdiablo.com/item.filter",
     "update_url": "https://raw.githubusercontent.com/GreenDude120/PoD-Launcher/master/files.xml",
 }
 
 LAUNCH_KEYS = {
-    "window_mode": "-w",
-    "glide_wrapper_only": "-3dfx",
+    "vmode_gdi": "-w",
+    "vmode_glide": "-3dfx",
+    "vmode_ddraw": "-ddraw",
+    "vmode_d2vidtest": "",
     "no_fix_aspect": "-nofixaspect",
     "skip_to_bnet": "-skiptobnet",
     "direct": "-direct",
     "no_sound": "-ns",
     "widescreen": "-widescreen",
+    "cpufix": "-cpufix"
 }
 
 CHUNK_SIZE = 8192
 SOCKET_TIMEOUT = 300
-IGNORE_ON_UPDATE = {"item.filter"}
+IGNORE_ON_UPDATE = {"item.filter", "ddraw.ini"}
 
 
 class UiLogger(logging.StreamHandler):
@@ -121,8 +126,7 @@ class Launcher:
         self.config = collections.ChainMap(file_config, DEFAULT_CONFIG)
         self.load()
         self.bind()
-        if self.config["check_for_updates"]:
-            self.ui.update_button.clicked.emit()
+        self.ui.update_button.clicked.emit()
 
     def center(self):
         desktop = QtWidgets.QApplication.desktop()
@@ -141,7 +145,7 @@ class Launcher:
                     continue
                 if isinstance(w, (QtWidgets.QLabel, QtWidgets.QLineEdit)):
                     w.setText(str(self.config[key]))
-                elif isinstance(w, QtWidgets.QCheckBox):
+                elif isinstance(w, (QtWidgets.QCheckBox, QtWidgets.QRadioButton)):
                     w.setChecked(self.config[key])
                 else:
                     logger.error("no widgets for %r key in config", key)
@@ -165,6 +169,14 @@ class Launcher:
     def _checkbox_changed(self, key, edit, *_):
         self.config[key] = edit.isChecked()
 
+    def _radio_clicked(self, key, edit, *_):
+        prefix, *_ = key.split("_")
+        for ckey in self.config:
+            if ckey == key:
+                self.config[ckey] = True
+            elif ckey.startswith(prefix):
+                self.config[ckey] = False
+
     def _line_edit_changed(self, key, edit):
         self.config[key] = edit.text()
 
@@ -176,6 +188,8 @@ class Launcher:
                 edit.clicked.connect(functools.partial(self._choose_directory, key, view))
             elif isinstance(edit, QtWidgets.QCheckBox):
                 edit.stateChanged.connect(functools.partial(self._checkbox_changed, key, edit))
+            elif isinstance(edit, QtWidgets.QRadioButton):
+                edit.clicked.connect(functools.partial(self._radio_clicked, key, edit))
             elif isinstance(edit, QtWidgets.QLineEdit):
                 edit.editingFinished.connect(functools.partial(self._line_edit_changed, key, edit))
             else:
@@ -219,9 +233,9 @@ class Launcher:
                 logger.exception("launch went wrong")
 
     def _download_file(self, urls, target, expected_crc=None):
-        logger.debug("downloading %r", urls)
         target.parent.mkdir(parents=True, exist_ok=True)
         for url in urls:
+            logger.debug("downloading %r", url)
             with target.open(mode="wb") as f:
                 try:
                     response = requests.get(url, stream=True)
@@ -245,9 +259,11 @@ class Launcher:
         need_update = []
         need_check = []
         for desc in descriptions:
+            if desc.target.name in IGNORE_ON_UPDATE:
+                continue
             if desc.crc and desc.target.exists():
                 need_check.append(desc)
-            elif desc.target.name not in IGNORE_ON_UPDATE:
+            else:
                 need_update.append(desc)
         if need_check:
             # crc32 local files
