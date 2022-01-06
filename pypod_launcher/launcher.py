@@ -37,6 +37,7 @@ DEFAULT_CONFIG = {
     "widescreen": True,
     "cpufix": False,
     "loot_filter_url": "http://pathofdiablo.com/item.filter",
+    "loot_filter_aliases_url": "",
     "update_url": "https://raw.githubusercontent.com/GreenDude120/PoD-Launcher/master/files.xml",
 }
 
@@ -199,6 +200,8 @@ class Launcher:
         self.ui.update_button.clicked.connect(self.update)
         f = functools.partial(self._choose_file, "loot_filter_url", self.ui.loot_filter_url_edit)
         self.ui.browse_loot_filter_button.clicked.connect(f)
+        f = functools.partial(self._choose_file, "loot_filter_aliases_url", self.ui.loot_filter_aliases_url_edit)
+        self.ui.browse_loot_filter_aliases_button.clicked.connect(f)
 
     @property
     def pod_path(self):
@@ -302,6 +305,23 @@ class Launcher:
                     tmp_file.replace(desc.target)
                     self.progress.add(1)
 
+    @staticmethod
+    def _try_open_then_download(uri: str):
+        try:
+            return pathlib.Path(uri).read_text()
+        except Exception:
+            response = requests.get(uri.strip())
+            response.raise_for_status()
+            return response.text
+
+    def _resolve_loot_filter_aliases(self):
+        uri = self.config["loot_filter_aliases_url"]
+        if not uri:
+            text = pkg_resources.resource_string("pypod_launcher", "d2.yaml")
+        else:
+            text = self._try_open_then_download(uri)
+        return Skin(yaml.load(text))
+
     def generate_loot_filter(self):
         with self.disabled_buttons():
             target = self.pod_path / "filter" / "item.filter"
@@ -311,14 +331,8 @@ class Launcher:
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
             logger.info("generating loot filter...")
-            uri = self.config["loot_filter_url"]
-            try:
-                template = pathlib.Path(uri).read_text()
-            except Exception:
-                response = requests.get(uri.strip())
-                response.raise_for_status()
-                template = response.text
-            d2 = Skin(yaml.load(pkg_resources.resource_string("pypod_launcher", "d2.yaml")))
+            template = self._try_open_then_download(self.config["loot_filter_url"])
+            d2 = self._resolve_loot_filter_aliases()
             rendered = jinja2.Template(template, line_statement_prefix="#", line_comment_prefix="##").render(d2=d2)
             header = "// Generated with pypod-launcher v{} ({})\n".format(version, datetime.datetime.now())
             target.parent.mkdir(exist_ok=True)
